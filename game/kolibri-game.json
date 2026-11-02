@@ -1,0 +1,86 @@
+{
+  "format": 1,
+  "type": "free-play",
+  "id": "org.togetherings.bobo-na-mi",
+  "version": "0.1.0",
+  "title": "Bobo na Mi",
+  "description": "Push Krio words to change the rules, then reach the flag. A puzzle game inspired by Baba Is You.",
+  "entry": "index.html",
+  "language": "kri",
+  "requires_platform": ">=0.2",
+  "icon": "icon.svg",
+  "color": "#ff7eb6",
+  "scoring": {
+    "label": "Moves",
+    "unit": "moves",
+    "order": "asc",
+    "counts": "best",
+    "tiebreak": "seconds",
+    "min": 1,
+    "max": 5000,
+    "decimals": 0,
+    "free_play_scoreboard": false
+  },
+  "settings": [
+    {
+      "key": "level",
+      "type": "choice",
+      "label": "Level",
+      "help": "Choose one level for a challenge, so the scoreboard compares everyone on the same puzzle. \"Any level\" lets learners pick.",
+      "choices": [
+        {
+          "value": "any",
+          "label": "Any level (learners choose)"
+        },
+        {
+          "value": "fos-step",
+          "label": "1. Fos Step (First step)"
+        },
+        {
+          "value": "usay-fo-go",
+          "label": "2. Usay fɔ Go? (Where to go?)"
+        },
+        {
+          "value": "bobo-na-win",
+          "label": "3. Bobo na Win (Boy is win)"
+        },
+        {
+          "value": "wata",
+          "label": "4. Wata (Water)"
+        },
+        {
+          "value": "ki-en-dor",
+          "label": "5. Ki en Dor (Key and door)"
+        },
+        {
+          "value": "ot-ot",
+          "label": "6. Ot Ot (Hot hot)"
+        },
+        {
+          "value": "titi",
+          "label": "7. Titi (Girl)"
+        },
+        {
+          "value": "padi-de-waka",
+          "label": "8. Padi de Waka (Friend is walking)"
+        },
+        {
+          "value": "chenj",
+          "label": "9. Chenj (Change)"
+        }
+      ],
+      "default": "any"
+    },
+    {
+      "key": "editor",
+      "type": "boolean",
+      "label": "Show the level editor",
+      "help": "Learners can make and save their own levels. It's always hidden in challenges.",
+      "default": true
+    }
+  ],
+  "authors": [
+    "Togetherings"
+  ],
+  "license": "MIT"
+}
