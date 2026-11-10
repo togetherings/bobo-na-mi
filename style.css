@@ -1,4 +1,7 @@
-/* style.css — Look and layout of Bobo na Mi (dark "night" theme). */
+/* style.css — Look and layout of Bobo na Mi.
+ * Light and dark themes follow the kit's Appearance option (<html data-theme>).
+ * The grid itself stays dark in both, like a night-time puzzle board.
+ * Touch buttons and the dialog frame come from the Petixel Main UI pack (assets/). */
 
 :root {
   --bg: #0f0f17;
@@ -7,10 +10,24 @@
   --line: #3a3a55;
   --text: #f1f1f5;
   --muted: #9a9ab0;
-  --pink: #ff7eb6;
-  --blue: #5ab4ff;
-  --green: #7be07b;
+  --accent: #ff7eb6;
+  --accent-text: #111;
   --gold: #ffd84a;
+  --green: #7be07b;
+  --eg-accent: #ff7eb6;           /* the kit's Options panel uses this */
+}
+:root[data-theme=light] {
+  --bg: #f3eee4;
+  --panel: #fffaf0;
+  --panel-2: #ece4d6;
+  --line: #c9bca8;
+  --text: #2b2236;
+  --muted: #6c6274;
+  --accent: #c2347a;
+  --accent-text: #fff;
+  --gold: #9a6a00;
+  --green: #2f7d3a;
+  --eg-accent: #c2347a;
 }
 
 * { box-sizing: border-box; }
@@ -25,10 +42,11 @@ button {
   border: 2px solid var(--line); border-radius: 10px; padding: 8px 14px;
   cursor: pointer; touch-action: manipulation; user-select: none; -webkit-user-select: none;
 }
-button:hover { border-color: var(--blue); }
+button:hover { border-color: var(--accent); }
 button:active { transform: translateY(1px); }
-button.primary { background: var(--pink); border-color: var(--pink); color: #111; font-weight: 700; }
-button.sel { border-color: var(--pink); background: #3a2a40; }
+button:disabled { opacity: .5; cursor: default; }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-text); font-weight: 700; }
+button.sel { border-color: var(--accent); background: var(--panel); }
 input, select, textarea {
   font: inherit; background: var(--panel); color: var(--text);
   border: 2px solid var(--line); border-radius: 8px; padding: 6px 8px;
@@ -36,6 +54,7 @@ input, select, textarea {
 h3 { margin: 18px 0 8px; }
 .hidden { display: none !important; }
 .small { color: var(--muted); font-size: .9rem; }
+canvas.sprite { image-rendering: pixelated; display: block; }
 
 /* ---------- Screens ---------- */
 .screen { position: absolute; top: 0; right: 0; bottom: 0; left: 0; display: flex; flex-direction: column; }
@@ -44,31 +63,28 @@ h3 { margin: 18px 0 8px; }
 .bar { display: flex; align-items: center; gap: 8px; padding: 8px; background: var(--panel); flex: 0 0 auto; }
 .bar h2 { flex: 1; margin: 0; font-size: 1.05rem; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .bar .spacer { width: 48px; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; }
 
 /* ---------- Title ---------- */
-#screen-title { align-items: center; justify-content: center; gap: 12px; padding: 16px; text-align: center; }
-.logo { margin: 0; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: clamp(2.2rem, 10vw, 4.5rem); letter-spacing: 3px; }
-.t-noun { color: var(--blue); }
-.t-op { color: #fff; }
-.t-prop { background: var(--pink); color: #111; padding: 0 .25em; border-radius: 8px; }
+#screen-title { align-items: center; justify-content: center; gap: 12px; padding: 16px; text-align: center; overflow-y: auto; }
+.logo { display: flex; gap: 6px; margin: 0; min-height: 72px; }
+.logo canvas { border-radius: 6px; }
 .tagline { color: var(--muted); margin: 0 0 8px; }
 .menu { display: flex; flex-direction: column; gap: 10px; width: min(320px, 90vw); }
-.menu button { padding: 14px; font-size: 1.1rem; }
-.version { color: var(--muted); font-size: .8rem; }
-.challenge-note { max-width: 420px; margin: 0; padding: 8px 12px; border: 2px solid var(--gold); border-radius: 10px; }
-button:disabled { opacity: .5; cursor: default; }
+.menu button { padding: 12px; font-size: 1.05rem; }
+.version { color: var(--muted); font-size: .8rem; margin: 0; }
 
 /* ---------- Level select ---------- */
-.level-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
-.level-grid button { text-align: left; padding: 12px; position: relative; }
+.level-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; }
+.level-grid button { text-align: start; padding: 12px; position: relative; }
 .level-grid .name { display: block; font-weight: 700; }
 .level-grid .sub { display: block; color: var(--muted); font-size: .85rem; }
-.level-grid .done { position: absolute; top: 8px; right: 10px; color: var(--green); font-weight: 700; }
+.level-grid .done { position: absolute; top: 8px; inset-inline-end: 10px; color: var(--green); font-weight: 700; }
 .empty { color: var(--muted); }
 
 /* ---------- Game ---------- */
 .stage { position: relative; flex: 1 1 auto; min-height: 0; display: flex; align-items: center; justify-content: center; padding: 6px; }
-.stage canvas { display: block; touch-action: none; border-radius: 4px; }
+.stage canvas { display: block; touch-action: none; border-radius: 4px; image-rendering: pixelated; }
 .rules {
   flex: 0 0 auto; display: flex; flex-wrap: wrap; gap: 6px; justify-content: center;
   padding: 2px 8px 8px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .85rem;
@@ -78,45 +94,64 @@ button:disabled { opacity: .5; cursor: default; }
 .rules .none { color: var(--muted); }
 .hint {
   position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); max-width: 90%;
-  background: var(--panel); border: 2px solid var(--pink); border-radius: 10px; padding: 6px 12px; text-align: center;
+  background: var(--panel); border: 2px solid var(--accent); border-radius: 10px; padding: 6px 12px; text-align: center;
 }
 .overlay {
-  position: absolute; top: 0; right: 0; bottom: 0; left: 0; display: flex; flex-direction: column;
-  align-items: center; justify-content: center; gap: 8px; background: rgba(10, 10, 20, .78); text-align: center;
+  position: absolute; top: 0; right: 0; bottom: 0; left: 0; display: flex;
+  align-items: center; justify-content: center; background: rgba(10, 10, 20, .6); text-align: center; padding: 12px;
 }
-.overlay h2 { margin: 0; font-size: 2.6rem; color: var(--gold); font-family: ui-monospace, Menlo, Consolas, monospace; }
-.overlay p { margin: 0 0 8px; color: var(--muted); }
-.overlay .win-info { color: var(--gold); }
-.overlay .win-info:empty { display: none; }
+.overlay h2 { margin: 0; font-size: 2.4rem; color: var(--gold); font-family: ui-monospace, Menlo, Consolas, monospace; }
+.overlay p { margin: 4px 0 12px; }
 .overlay .buttons { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
 
-/* ---------- Touch controls ---------- */
+/* The Petixel window frame around dialogs and the win box */
+.window {
+  background: var(--panel); color: var(--text);
+  border: 18px solid transparent; border-image: url(assets/window.png) 16 / 18px stretch;
+  border-radius: 4px; padding: 6px 10px; image-rendering: pixelated;
+}
+
+/* ---------- Touch controls: buttons from the Petixel Main UI pack ----------
+ * assets/ui.png is 432 x 96: up, down, left, right, blank (48 wide each), undo, wide
+ * blank (96 wide); the bottom row is the pressed look. Drawn 1.25 times bigger. */
 .touch { display: none; flex: 0 0 auto; justify-content: space-between; align-items: center; gap: 12px; padding: 6px 14px 14px; }
 body.show-touch .touch { display: flex; }
-.dpad { display: grid; grid-template-columns: repeat(3, 58px); grid-template-rows: repeat(3, 58px); gap: 4px; }
-.dpad button { padding: 0; font-size: 1.4rem; }
-.dpad .up { grid-column: 2; grid-row: 1; }
-.dpad .left { grid-column: 1; grid-row: 2; }
-.dpad .wait { grid-column: 2; grid-row: 2; font-size: 1rem; color: var(--muted); }
-.dpad .right { grid-column: 3; grid-row: 2; }
-.dpad .down { grid-column: 2; grid-row: 3; }
-.side { display: flex; flex-direction: column; gap: 10px; }
-.side button { min-width: 116px; padding: 14px 12px; }
+.dpad { display: grid; grid-template-columns: repeat(3, 60px); grid-template-rows: repeat(3, 60px); gap: 2px; }
+.pad {
+  width: 60px; height: 60px; padding: 0; border: 0; border-radius: 10px;
+  background: url(assets/ui.png) no-repeat; background-size: 540px 120px; image-rendering: pixelated;
+  color: #fff6dc; font-weight: 700; text-shadow: 0 2px 0 rgba(0, 0, 0, .35);
+}
+.pad:hover { border: 0; }
+.pad.up { grid-column: 2; grid-row: 1; background-position: 0 0; }
+.pad.down { grid-column: 2; grid-row: 3; background-position: -60px 0; }
+.pad.left { grid-column: 1; grid-row: 2; background-position: -120px 0; }
+.pad.right { grid-column: 3; grid-row: 2; background-position: -180px 0; }
+.pad.wait { grid-column: 2; grid-row: 2; background-position: -240px 0; font-size: 1.6rem; }
+.pad.undo { width: 120px; background-position: -300px 0; }
+.pad.wide { width: 120px; background-position: -420px 0; }
+.pad.up:active { background-position: 0 -60px; }
+.pad.down:active { background-position: -60px -60px; }
+.pad.left:active { background-position: -120px -60px; }
+.pad.right:active { background-position: -180px -60px; }
+.pad.wait:active { background-position: -240px -60px; }
+.pad.undo:active { background-position: -300px -60px; }
+.pad.wide:active { background-position: -420px -60px; }
+.side { display: flex; flex-direction: column; gap: 8px; }
 
 /* Phones held sideways: float the controls over the left and right edges */
 @media (orientation: landscape) and (max-height: 520px) {
   body.show-touch .touch { position: absolute; left: 0; right: 0; bottom: 0; pointer-events: none; }
-  body.show-touch .touch button { pointer-events: auto; opacity: .85; }
-  body.show-touch #screen-game .stage { padding-left: 200px; padding-right: 150px; }
+  body.show-touch .touch button { pointer-events: auto; opacity: .9; }
+  body.show-touch #screen-game .stage,
   body.show-touch #screen-game .rules { padding-left: 200px; padding-right: 150px; }
 }
 
-/* ---------- Options ---------- */
+/* ---------- Keys ---------- */
 .keys { border-collapse: collapse; width: 100%; max-width: 520px; }
-.keys td { padding: 5px 6px; border-bottom: 1px solid #2a2a3d; }
+.keys td { padding: 5px 6px; border-bottom: 1px solid var(--line); }
 .keys button.key { min-width: 100px; font-family: ui-monospace, Menlo, Consolas, monospace; }
-.keys button.waiting { border-color: var(--pink); color: var(--pink); }
-.opt-row { display: flex; align-items: center; gap: 10px; margin: 10px 0; flex-wrap: wrap; }
+.keys button.waiting { border-color: var(--accent); color: var(--accent); }
 
 /* ---------- Words ---------- */
 .word-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
@@ -132,7 +167,6 @@ body.show-touch .touch { display: flex; }
 #ed-name { width: 10em; }
 .ed-palette { display: flex; gap: 4px; overflow-x: auto; padding: 6px 8px; flex: 0 0 auto; }
 .ed-palette button { padding: 2px; border-radius: 6px; flex: 0 0 auto; }
-.ed-palette canvas { display: block; }
 .ed-palette .tool-icon { display: flex; width: 34px; height: 34px; align-items: center; justify-content: center; font-size: 1.2rem; }
 .ed-palette .sep { width: 2px; background: var(--line); flex: 0 0 auto; margin: 0 4px; }
 @media (min-width: 900px) { .ed-palette { flex-wrap: wrap; overflow-x: visible; } }
@@ -140,9 +174,9 @@ body.show-touch .touch { display: flex; }
 .ed-opts button { padding: 4px 10px; }
 
 /* ---------- Dialog and toast ---------- */
-.modal { position: fixed; top: 0; right: 0; bottom: 0; left: 0; background: rgba(0, 0, 0, .6); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 10; }
-.modal-box { background: var(--panel); border-radius: 12px; padding: 16px; width: min(560px, 100%); max-height: 90%; overflow: auto; }
+.modal { position: fixed; top: 0; right: 0; bottom: 0; left: 0; background: rgba(0, 0, 0, .55); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 10; }
+.modal-box { width: min(560px, 100%); max-height: 90%; overflow: auto; }
 .modal-box h3 { margin-top: 0; }
-.modal-box textarea { width: 100%; height: 220px; margin-top: 8px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .8rem; }
+.modal-box textarea { width: 100%; height: 140px; margin-top: 8px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .8rem; word-break: break-all; }
 .modal-buttons { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; margin-top: 12px; }
 .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--panel-2); border: 2px solid var(--line); padding: 8px 16px; border-radius: 10px; z-index: 20; max-width: 90%; text-align: center; }

@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<!-- Bobo na Mi — a Krio word-puzzle game, made with EduGame Kit.
+     Words come from lang/*.json: an element with a data-t attribute gets that word. -->
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>Bobo na Mi</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ============ Title ============ -->
+  <section id="screen-title" class="screen">
+    <h1 id="logo" class="logo" aria-label="Bobo na Mi"></h1>
+    <p class="tagline" data-t="tagline">Push the words to change the rules!</p>
+    <div class="menu">
+      <button type="button" class="primary" id="btn-play" data-go="levels" disabled data-t="play">Play</button>
+      <button type="button" id="btn-editor" data-go="editor" data-t="menu.editor">Level editor</button>
+      <button type="button" data-go="words" data-t="menu.words">Words</button>
+      <button type="button" data-go="keys" data-t="menu.keys">Keys</button>
+      <button type="button" data-edugame-options data-t="kit.options">Options</button>
+      <button type="button" id="btn-exit" class="hidden" data-t="exit">Back</button>
+    </div>
+    <p class="version">v<span id="version"></span></p>
+  </section>
+
+  <!-- ============ Level select ============ -->
+  <section id="screen-levels" class="screen hidden">
+    <header class="bar"><button type="button" data-go="title" data-t-attr="aria-label:back">◀</button>
+      <h2 data-t="levels">Levels</h2><span class="spacer"></span></header>
+    <div class="scroll"><div class="content">
+      <h3 data-t="main_levels">Main levels</h3>
+      <div id="level-list" class="level-grid"></div>
+      <h3 data-t="your_levels">Your levels</h3>
+      <div id="custom-list" class="level-grid"></div>
+    </div></div>
+  </section>
+
+  <!-- ============ Game ============ -->
+  <section id="screen-game" class="screen hidden">
+    <header class="bar">
+      <button type="button" data-action="menu" data-t-attr="aria-label:back">◀</button>
+      <h2 id="level-title"></h2>
+      <button type="button" data-action="undo" data-t-attr="aria-label:action.undo">↶</button>
+      <button type="button" data-action="restart" data-t-attr="aria-label:action.restart">⟲</button>
+    </header>
+    <div class="stage">
+      <canvas id="game-canvas"></canvas>
+      <div id="hint" class="hint hidden"></div>
+      <div id="win-box" class="overlay hidden">
+        <div class="window">
+          <h2 data-t="won">Yu win!</h2>
+          <p id="win-sub"></p>
+          <div class="buttons">
+            <button type="button" id="win-next" class="primary" data-t="next">Next</button>
+            <button type="button" id="win-undo" data-t="undo">Undo</button>
+            <button type="button" id="win-back" data-t="levels">Levels</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="rules" class="rules"></div>
+    <!-- On-screen controls (touch devices, or switched on in Options), from the Petixel Main UI pack -->
+    <div class="touch">
+      <div class="dpad">
+        <button type="button" data-action="up" class="pad up" data-t-attr="aria-label:action.up"></button>
+        <button type="button" data-action="left" class="pad left" data-t-attr="aria-label:action.left"></button>
+        <button type="button" data-action="wait" class="pad wait" data-t-attr="aria-label:action.wait">•</button>
+        <button type="button" data-action="right" class="pad right" data-t-attr="aria-label:action.right"></button>
+        <button type="button" data-action="down" class="pad down" data-t-attr="aria-label:action.down"></button>
+      </div>
+      <div class="side">
+        <button type="button" data-action="undo" class="pad undo" data-t-attr="aria-label:action.undo"></button>
+        <button type="button" data-action="restart" class="pad wide" data-t="restart">Restart</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ Words ============ -->
+  <section id="screen-words" class="screen hidden">
+    <header class="bar"><button type="button" data-go="title" data-t-attr="aria-label:back">◀</button>
+      <h2 data-t="menu.words">Words</h2><span class="spacer"></span></header>
+    <div class="scroll"><div class="content">
+      <p data-t="words.help">Push word tiles into a line, left to right or top to bottom.</p>
+      <div id="word-grid" class="word-grid"></div>
+    </div></div>
+  </section>
+
+  <!-- ============ Keys ============ -->
+  <section id="screen-keys" class="screen hidden">
+    <header class="bar"><button type="button" data-go="title" data-t-attr="aria-label:back">◀</button>
+      <h2 data-t="menu.keys">Keys</h2><span class="spacer"></span></header>
+    <div class="scroll"><div class="content">
+      <p class="small" data-t="keys.help">Click a key, then press the new key.</p>
+      <table class="keys"><tbody id="key-table"></tbody></table>
+      <p class="row">
+        <button type="button" id="btn-keys-reset" data-t="keys_reset_button">Reset keys</button>
+        <button type="button" id="btn-progress-reset" data-t="progress_reset">Reset progress</button>
+      </p>
+    </div></div>
+  </section>
+
+  <!-- ============ Level editor ============ -->
+  <section id="screen-editor" class="screen hidden">
+    <header class="bar">
+      <button type="button" data-go="title" data-t-attr="aria-label:back">◀</button>
+      <h2 data-t="menu.editor">Level editor</h2>
+      <button type="button" id="ed-undo" data-t-attr="aria-label:editor.undo">↶</button>
+      <button type="button" id="ed-test" class="primary" data-t="editor.test">Test</button>
+    </header>
+    <div class="ed-tools">
+      <input id="ed-name" maxlength="40" data-t-attr="aria-label:editor.name">
+      <label><span data-t="editor.width">W</span> <input id="ed-w" type="number" min="3" max="24"></label>
+      <label><span data-t="editor.height">H</span> <input id="ed-h" type="number" min="3" max="24"></label>
+      <button type="button" id="ed-resize" data-t="editor.resize">Resize</button>
+      <select id="ed-load" data-t-attr="aria-label:editor.open"></select>
+      <button type="button" id="ed-new" data-t="editor.new">New</button>
+      <button type="button" id="ed-save" data-t="editor.save">Save</button>
+      <button type="button" id="ed-export" data-t="editor.export">Export</button>
+      <button type="button" id="ed-import" data-t="editor.import">Import</button>
+      <button type="button" id="ed-delete" data-t="editor.delete">Delete</button>
+    </div>
+    <div id="ed-palette" class="ed-palette"></div>
+    <div class="ed-opts">
+      <span data-t="editor.facing">Facing:</span>
+      <button type="button" data-dir="0" data-t-attr="aria-label:action.right">→</button>
+      <button type="button" data-dir="1" data-t-attr="aria-label:action.up">↑</button>
+      <button type="button" data-dir="2" data-t-attr="aria-label:action.left">←</button>
+      <button type="button" data-dir="3" data-t-attr="aria-label:action.down">↓</button>
+      <label><input type="checkbox" id="ed-stack"> <span data-t="editor.stack">Stack</span></label>
+    </div>
+    <div class="stage"><canvas id="ed-canvas"></canvas></div>
+    <div id="ed-rules" class="rules"></div>
+  </section>
+
+  <!-- ============ Dialog box and messages ============ -->
+  <div id="modal" class="modal hidden">
+    <div class="window modal-box">
+      <h3 id="modal-title"></h3>
+      <div id="modal-body"></div>
+      <div id="modal-buttons" class="modal-buttons"></div>
+    </div>
+  </div>
+  <div id="toast" class="toast hidden" role="status"></div>
+
+  <!-- edugame-config.js and edugame.js are made by "edugame build"; keep these two lines. -->
+  <script src="edugame-config.js"></script>
+  <script src="edugame.js"></script>
+  <script src="src/atlas.js"></script>
+  <script src="src/words.js"></script>
+  <script src="src/levels.js"></script>
+  <script src="src/engine.js"></script>
+  <script src="src/save.js"></script>
+  <script src="src/sprites.js"></script>
+  <script src="src/render.js"></script>
+  <script src="src/sound.js"></script>
+  <script src="src/input.js"></script>
+  <script src="src/editor.js"></script>
+  <script src="src/main.js"></script>
+</body>
+</html>

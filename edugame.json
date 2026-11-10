@@ -1,0 +1,40 @@
+{
+  "format": 1,
+  "type": "saved",
+  "id": "org.togetherings.bobo-na-mi",
+  "version": "0.2.0",
+  "languages": [
+    "en",
+    "fr"
+  ],
+  "icon": "icon.svg",
+  "color": "#ff7eb6",
+  "authors": [
+    "togetherings"
+  ],
+  "license": "Code: MIT. Art: Petixel packs, used under licence (not for reuse or AI training).",
+  "options": {
+    "theme": "dark",
+    "header": false
+  },
+  "settings": [
+    {
+      "key": "editor",
+      "type": "boolean",
+      "label": "Show the level editor",
+      "help": "Learners can make and save their own levels.",
+      "default": true
+    }
+  ],
+  "exclude": [
+    "README.md",
+    "CHANGELOG.md",
+    "CLAUDE.md",
+    "tests/*",
+    "tools/*",
+    "art-src/*",
+    "dist/*",
+    "_site/*",
+    "kolibri-screenshots/*"
+  ]
+}
