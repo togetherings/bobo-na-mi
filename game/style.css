@@ -1,0 +1,148 @@
+/* style.css — Look and layout of Bobo na Mi (dark "night" theme). */
+
+:root {
+  --bg: #0f0f17;
+  --panel: #1b1b28;
+  --panel-2: #262638;
+  --line: #3a3a55;
+  --text: #f1f1f5;
+  --muted: #9a9ab0;
+  --pink: #ff7eb6;
+  --blue: #5ab4ff;
+  --green: #7be07b;
+  --gold: #ffd84a;
+}
+
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; height: 100%; overflow: hidden;
+  background: var(--bg); color: var(--text);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+button {
+  font: inherit; color: var(--text); background: var(--panel-2);
+  border: 2px solid var(--line); border-radius: 10px; padding: 8px 14px;
+  cursor: pointer; touch-action: manipulation; user-select: none; -webkit-user-select: none;
+}
+button:hover { border-color: var(--blue); }
+button:active { transform: translateY(1px); }
+button.primary { background: var(--pink); border-color: var(--pink); color: #111; font-weight: 700; }
+button.sel { border-color: var(--pink); background: #3a2a40; }
+input, select, textarea {
+  font: inherit; background: var(--panel); color: var(--text);
+  border: 2px solid var(--line); border-radius: 8px; padding: 6px 8px;
+}
+h3 { margin: 18px 0 8px; }
+.hidden { display: none !important; }
+.small { color: var(--muted); font-size: .9rem; }
+
+/* ---------- Screens ---------- */
+.screen { position: absolute; top: 0; right: 0; bottom: 0; left: 0; display: flex; flex-direction: column; }
+.scroll { flex: 1; overflow-y: auto; }
+.content { padding: 8px 16px 32px; max-width: 900px; margin: 0 auto; }
+.bar { display: flex; align-items: center; gap: 8px; padding: 8px; background: var(--panel); flex: 0 0 auto; }
+.bar h2 { flex: 1; margin: 0; font-size: 1.05rem; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bar .spacer { width: 48px; }
+
+/* ---------- Title ---------- */
+#screen-title { align-items: center; justify-content: center; gap: 12px; padding: 16px; text-align: center; }
+.logo { margin: 0; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: clamp(2.2rem, 10vw, 4.5rem); letter-spacing: 3px; }
+.t-noun { color: var(--blue); }
+.t-op { color: #fff; }
+.t-prop { background: var(--pink); color: #111; padding: 0 .25em; border-radius: 8px; }
+.tagline { color: var(--muted); margin: 0 0 8px; }
+.menu { display: flex; flex-direction: column; gap: 10px; width: min(320px, 90vw); }
+.menu button { padding: 14px; font-size: 1.1rem; }
+.version { color: var(--muted); font-size: .8rem; }
+.challenge-note { max-width: 420px; margin: 0; padding: 8px 12px; border: 2px solid var(--gold); border-radius: 10px; }
+button:disabled { opacity: .5; cursor: default; }
+
+/* ---------- Level select ---------- */
+.level-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
+.level-grid button { text-align: left; padding: 12px; position: relative; }
+.level-grid .name { display: block; font-weight: 700; }
+.level-grid .sub { display: block; color: var(--muted); font-size: .85rem; }
+.level-grid .done { position: absolute; top: 8px; right: 10px; color: var(--green); font-weight: 700; }
+.empty { color: var(--muted); }
+
+/* ---------- Game ---------- */
+.stage { position: relative; flex: 1 1 auto; min-height: 0; display: flex; align-items: center; justify-content: center; padding: 6px; }
+.stage canvas { display: block; touch-action: none; border-radius: 4px; }
+.rules {
+  flex: 0 0 auto; display: flex; flex-wrap: wrap; gap: 6px; justify-content: center;
+  padding: 2px 8px 8px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .85rem;
+}
+.rules span { background: var(--panel); border-radius: 6px; padding: 2px 8px; }
+.rules em { color: var(--muted); font-style: normal; }
+.rules .none { color: var(--muted); }
+.hint {
+  position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); max-width: 90%;
+  background: var(--panel); border: 2px solid var(--pink); border-radius: 10px; padding: 6px 12px; text-align: center;
+}
+.overlay {
+  position: absolute; top: 0; right: 0; bottom: 0; left: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 8px; background: rgba(10, 10, 20, .78); text-align: center;
+}
+.overlay h2 { margin: 0; font-size: 2.6rem; color: var(--gold); font-family: ui-monospace, Menlo, Consolas, monospace; }
+.overlay p { margin: 0 0 8px; color: var(--muted); }
+.overlay .win-info { color: var(--gold); }
+.overlay .win-info:empty { display: none; }
+.overlay .buttons { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+
+/* ---------- Touch controls ---------- */
+.touch { display: none; flex: 0 0 auto; justify-content: space-between; align-items: center; gap: 12px; padding: 6px 14px 14px; }
+body.show-touch .touch { display: flex; }
+.dpad { display: grid; grid-template-columns: repeat(3, 58px); grid-template-rows: repeat(3, 58px); gap: 4px; }
+.dpad button { padding: 0; font-size: 1.4rem; }
+.dpad .up { grid-column: 2; grid-row: 1; }
+.dpad .left { grid-column: 1; grid-row: 2; }
+.dpad .wait { grid-column: 2; grid-row: 2; font-size: 1rem; color: var(--muted); }
+.dpad .right { grid-column: 3; grid-row: 2; }
+.dpad .down { grid-column: 2; grid-row: 3; }
+.side { display: flex; flex-direction: column; gap: 10px; }
+.side button { min-width: 116px; padding: 14px 12px; }
+
+/* Phones held sideways: float the controls over the left and right edges */
+@media (orientation: landscape) and (max-height: 520px) {
+  body.show-touch .touch { position: absolute; left: 0; right: 0; bottom: 0; pointer-events: none; }
+  body.show-touch .touch button { pointer-events: auto; opacity: .85; }
+  body.show-touch #screen-game .stage { padding-left: 200px; padding-right: 150px; }
+  body.show-touch #screen-game .rules { padding-left: 200px; padding-right: 150px; }
+}
+
+/* ---------- Options ---------- */
+.keys { border-collapse: collapse; width: 100%; max-width: 520px; }
+.keys td { padding: 5px 6px; border-bottom: 1px solid #2a2a3d; }
+.keys button.key { min-width: 100px; font-family: ui-monospace, Menlo, Consolas, monospace; }
+.keys button.waiting { border-color: var(--pink); color: var(--pink); }
+.opt-row { display: flex; align-items: center; gap: 10px; margin: 10px 0; flex-wrap: wrap; }
+
+/* ---------- Words ---------- */
+.word-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
+.word-card { display: flex; align-items: center; gap: 8px; background: var(--panel); border-radius: 10px; padding: 8px; }
+.word-card canvas { border-radius: 6px; flex: 0 0 auto; }
+.word-card div { display: flex; flex-direction: column; }
+.word-card small { color: var(--muted); }
+
+/* ---------- Editor ---------- */
+.ed-tools { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 6px 8px; background: var(--panel); flex: 0 0 auto; }
+.ed-tools button { padding: 6px 10px; }
+.ed-tools input[type=number] { width: 4.2em; }
+#ed-name { width: 10em; }
+.ed-palette { display: flex; gap: 4px; overflow-x: auto; padding: 6px 8px; flex: 0 0 auto; }
+.ed-palette button { padding: 2px; border-radius: 6px; flex: 0 0 auto; }
+.ed-palette canvas { display: block; }
+.ed-palette .tool-icon { display: flex; width: 34px; height: 34px; align-items: center; justify-content: center; font-size: 1.2rem; }
+.ed-palette .sep { width: 2px; background: var(--line); flex: 0 0 auto; margin: 0 4px; }
+@media (min-width: 900px) { .ed-palette { flex-wrap: wrap; overflow-x: visible; } }
+.ed-opts { display: flex; gap: 6px; align-items: center; padding: 0 8px 4px; flex-wrap: wrap; flex: 0 0 auto; }
+.ed-opts button { padding: 4px 10px; }
+
+/* ---------- Dialog and toast ---------- */
+.modal { position: fixed; top: 0; right: 0; bottom: 0; left: 0; background: rgba(0, 0, 0, .6); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 10; }
+.modal-box { background: var(--panel); border-radius: 12px; padding: 16px; width: min(560px, 100%); max-height: 90%; overflow: auto; }
+.modal-box h3 { margin-top: 0; }
+.modal-box textarea { width: 100%; height: 220px; margin-top: 8px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .8rem; }
+.modal-buttons { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; margin-top: 12px; }
+.toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--panel-2); border: 2px solid var(--line); padding: 8px 16px; border-radius: 10px; z-index: 20; max-width: 90%; text-align: center; }
