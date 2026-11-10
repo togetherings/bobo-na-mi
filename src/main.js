@@ -314,7 +314,8 @@ BNM.frame = 0;             // animation frame counter (waves, flames, flag, key)
   window.addEventListener('resize', redrawCurrent);
   setInterval(function () { BNM.frame = (BNM.frame + 1) % 4; redrawCurrent(); }, 400);
 
-  // Keyboard keys need focus inside the game's frame (Kolibri shows games in a frame)
+  // Keyboard keys need focus inside the game's frame (Kolibri shows games in a frame).
+  // Focusing on a tap or click is allowed; focusing without one isn't.
   document.addEventListener('pointerdown', function () { window.focus(); });
 
   BNM.save.setErrorHandler(toast);
@@ -337,7 +338,8 @@ BNM.frame = 0;             // animation frame counter (waves, flames, flag, key)
     $('btn-exit').onclick = function () { if (EG) EG.exit(); };
     applyTouch();
     $('btn-play').disabled = false;
-    window.focus();
+    // No window.focus() here: inside a frame, browsers refuse focus without a tap or click
+    // (and report it as an error). The first tap focuses the game (see pointerdown above).
   }
 
   // Draw the pictures once the sprite sheet has loaded (shapes until then).
