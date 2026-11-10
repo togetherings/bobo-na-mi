@@ -17,7 +17,7 @@ BNM.sound = (function () {
   };
 
   function play(name) {
-    if (!BNM.settings.sound || !SOUNDS[name]) return;
+    if (BNM.option('sound') !== 'on' || !SOUNDS[name]) return;
     try {
       ac = ac || new (window.AudioContext || window.webkitAudioContext)();
       var now = ac.currentTime;

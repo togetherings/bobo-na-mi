@@ -1,53 +1,47 @@
-"""Plays Bobo na Mi in the Kolibri Games preview server, in Chromium.
+"""Plays Bobo na Mi in EduGame Kit's test page, in Chromium.
 
-    python3 tests/browser_test.py path/to/kolibri-games [--screenshots out/]
+    python3 tests/browser_test.py [--kit path/to/edugame-kit] [--screenshots out/]
 
-Needs a copy of https://github.com/togetherings/kolibri-games (no install
-needed) and Playwright for Python. It checks that:
+Needs EduGame Kit (installed, or a copy given with --kit) and Playwright for Python.
+The test page pretends to be a learning system (SCORM 1.2, with Kolibri's rules), the way
+Kolibri Learn runs the game. It checks that:
 
-  * a learner can solve a level, and the save (ticks, best moves) is on the
-    server: a second browser, like a second device, sees it;
-  * the editor doesn't offer Download (the sandbox blocks downloads);
-  * a coach's challenge fixes the level, and the solve is scored and ranked;
-  * the game shows no errors.
+  * a learner can solve a level, and coming back shows the tick and the best number of moves;
+  * the save stays small, and no score is sent;
+  * a level made in the editor is saved, and its code imports again;
+  * French works, and the on-screen buttons show on a phone;
+  * the page shows no errors.
 """
 import argparse
 import os
+import subprocess
 import sys
-import tempfile
-import threading
-from http.server import ThreadingHTTPServer
+import time
+import urllib.request
 
-HERE = os.path.dirname(os.path.abspath(__file__))
-GAME = os.path.join(HERE, "..", "game")
-KEY = "f-org.togetherings.bobo-na-mi"
+ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 
 
-def serve(platform_src, port):
-    """Start the preview server with only this game in it."""
-    games = tempfile.mkdtemp(prefix="bnm-games-")
-    os.symlink(os.path.abspath(GAME), os.path.join(games, "bobo-na-mi"))
-    os.environ["KOLIBRI_GAMES_PATH"] = games
-    os.environ["KOLIBRI_HOME"] = tempfile.mkdtemp(prefix="bnm-home-")
-    os.environ["KOLIBRI_GAMES_DEV_QUIET"] = "1"
-    sys.path.insert(0, os.path.abspath(platform_src))
-    from kolibri_games import devserver, registry
-    registry.discover(refresh=True)
-    server = ThreadingHTTPServer(("127.0.0.1", port), devserver.Handler)
-    threading.Thread(target=server.serve_forever, daemon=True).start()
-    return server
-
-
-def press(page, keys):
-    names = {"r": "ArrowRight", "u": "ArrowUp", "l": "ArrowLeft", "d": "ArrowDown", "w": "Space"}
-    for k in keys:
-        page.keyboard.press(names[k])
+def start_preview(kit, port):
+    env = dict(os.environ)
+    if kit:
+        env["PYTHONPATH"] = os.path.abspath(kit) + os.pathsep + env.get("PYTHONPATH", "")
+    proc = subprocess.Popen([sys.executable, "-m", "edugame", "preview", ROOT, "--no-browser", "--port", str(port)],
+                            env=env, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+    for _ in range(50):
+        try:
+            urllib.request.urlopen("http://127.0.0.1:%d/" % port, timeout=1)
+            return proc
+        except Exception:
+            time.sleep(0.2)
+    proc.kill()
+    sys.exit("The kit's preview didn't start")
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("platform", help="folder with the kolibri-games source")
-    parser.add_argument("--port", type=int, default=8798)
+    parser.add_argument("--kit", default=None, help="folder with the edugame-kit source")
+    parser.add_argument("--port", type=int, default=8812)
     parser.add_argument("--screenshots", default=None)
     args = parser.parse_args()
     from playwright.sync_api import sync_playwright
@@ -60,80 +54,118 @@ def main():
         if shots:
             page.screenshot(path=os.path.join(shots, name))
 
-    serve(args.platform, args.port)
+    proc = start_preview(args.kit, args.port)
     base = "http://127.0.0.1:%d/" % args.port
     errors = []
+    try:
+        with sync_playwright() as p:
+            browser = p.chromium.launch()
 
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
+            def new_page(width=1100, height=820, **kw):
+                page = browser.new_context(viewport={"width": width, "height": height}, **kw).new_page()
+                page.on("pageerror", lambda e: errors.append("page: %s" % e))
+                page.on("console", lambda m: m.type == "error" and errors.append("console: %s" % m.text))
+                return page
 
-        def new_page(width=1200, height=860, **kw):
-            ctx = browser.new_context(viewport={"width": width, "height": height}, **kw)
-            page = ctx.new_page()
-            page.on("pageerror", lambda e: errors.append("page: %s" % e))
-            page.on("console", lambda m: m.type == "error" and errors.append("console: %s" % m.text))
-            return page
+            def open_game(page, lang=None):
+                page.goto(base)
+                page.locator("#game").wait_for()
+                page.select_option("#mode", "scorm")
+                if not page.is_checked("#as-kolibri"):
+                    page.check("#as-kolibri")
+                if lang:
+                    page.select_option("#lang", lang)
+                frame = page.frame_locator("#game")
+                frame.locator("#btn-play:not([disabled])").wait_for()
+                return frame
 
-        def open_game(page, who, hash_="#/play/" + KEY):
-            page.goto(base + "?as=" + who + hash_)
-            frame = page.frame_locator("iframe.game-frame")
+            def press(page, keys):
+                names = {"r": "ArrowRight", "u": "ArrowUp", "l": "ArrowLeft", "d": "ArrowDown", "w": "Space"}
+                for k in keys:
+                    page.keyboard.press(names[k])
+
+            # 1. Solve level 1 with the keyboard
+            page = new_page()
+            frame = open_game(page)
+            page.wait_for_timeout(300)
+            shot(page, "1-title.png")
+            frame.locator("#btn-play").click()
+            shot(page, "2-levels.png")
+            frame.locator("#level-list button").first.click()
+            frame.locator("#game-canvas").click()
+            page.wait_for_timeout(200)
+            shot(page, "3-level1.png")
+            press(page, "rrrrrrr")
+            frame.locator("#win-box:not(.hidden)").wait_for()
+            sub = frame.locator("#win-sub").inner_text()
+            assert "7 moves" in sub, sub
+            shot(page, "4-won.png")
+
+            # 2. What the learning system keeps: a small save, no score
+            cmi = page.evaluate("() => JSON.parse(localStorage.getItem('edugame-test-scorm:org.togetherings.bobo-na-mi') || '{}')")
+            data = cmi.get("cmi.suspend_data", "")
+            assert '"fos-step":7' in data, data
+            assert len(data) < 4096, len(data)
+            assert not cmi.get("cmi.core.score.raw"), cmi
+
+            # 3. Coming back: the tick and the best number of moves
+            page.click("#reload")
+            frame = page.frame_locator("#game")
             frame.locator("#btn-play:not([disabled])").wait_for()
-            return frame
+            frame.locator("#btn-play").click()
+            first = frame.locator("#level-list button").first.inner_text()
+            assert "✓" in first and "best 7 moves" in first, first
 
-        # 1. Amina solves level 1 in free play
-        page = new_page()
-        frame = open_game(page, "amina")
-        shot(page, "1-title.png")
-        assert frame.locator("#btn-editor").is_visible(), "the editor is on by default"
-        frame.locator("#btn-play").click()
-        frame.locator("#level-list button").first.click()
-        frame.locator("#game-canvas").click()
-        press(page, "rrrrrrr")
-        frame.locator("#win-box:not(.hidden)").wait_for()
-        sub = frame.locator("#win-sub").inner_text()
-        assert "7 moves" in sub, sub
-        shot(page, "2-won.png")
-        frame.locator("#win-back").click()
-        page.wait_for_timeout(1500)                     # the save is sent after a short pause
+            # 4. The editor: a new level, saved, exported and imported again
+            frame.locator("#screen-levels [data-go=title]").click()
+            frame.locator("#btn-editor").click()
+            frame.locator("#ed-palette [data-tool='bobo']").click()
+            box = frame.locator("#ed-canvas").bounding_box()
+            cell = box["width"] / 12
+            frame.locator("#ed-canvas").click(position={"x": cell * 2.5, "y": cell * 2.5})
+            for i, tool in enumerate(["T:bobo", "T:na", "T:mi"]):
+                frame.locator("#ed-palette [data-tool='%s']" % tool).click()
+                frame.locator("#ed-canvas").click(position={"x": cell * (1.5 + i), "y": cell * 0.5})
+            assert "BOBO NA MI" in frame.locator("#ed-rules").inner_text()
+            frame.locator("#ed-name").fill("Mi level")
+            frame.locator("#ed-save").click()
+            shot(page, "5-editor.png")
+            frame.locator("#ed-export").click()
+            code = frame.locator("#ed-code").input_value()
+            assert code.startswith("BNM1|12|10|Mi level|"), code
+            frame.locator("#modal-buttons button.primary").click()
+            frame.locator("#ed-new").click()
+            frame.locator("#modal-buttons button.primary").click()
+            frame.locator("#ed-import").click()
+            frame.locator("#ed-paste").fill(code)
+            frame.locator("#modal-buttons button.primary").click()
+            assert frame.locator("#ed-name").input_value() == "Mi level"
+            assert "BOBO NA MI" in frame.locator("#ed-rules").inner_text()
+            cmi = page.evaluate("() => JSON.parse(localStorage.getItem('edugame-test-scorm:org.togetherings.bobo-na-mi') || '{}')")
+            assert "BNM1|12|10|Mi level|" in cmi.get("cmi.suspend_data", ""), "the level is in the save"
 
-        # Export offers Copy but not Download inside Kolibri Games
-        frame.locator("[data-go=title]").first.click()
-        frame.locator("#btn-editor").click()
-        frame.locator("#ed-export").click()
-        buttons = frame.locator("#modal-buttons button").all_inner_texts()
-        assert "Download" not in buttons and "Copy" in buttons, buttons
+            # 5. French, on a phone, with the on-screen buttons
+            phone = new_page(390, 800, has_touch=True, is_mobile=True)
+            frame = open_game(phone, "fr")
+            assert frame.locator("#btn-play").inner_text() == "Jouer"
+            shot(phone, "6-phone-title-fr.png")
+            frame.locator("#btn-play").click()
+            frame.locator("#level-list button").nth(6).click()
+            frame.locator(".touch .pad.left").wait_for()
+            assert frame.locator(".touch").is_visible(), "on-screen buttons on a phone"
+            frame.locator(".pad.left").tap()
+            phone.wait_for_timeout(200)
+            shot(phone, "7-phone-titi.png")
 
-        # 2. Another device: a new browser, same learner, sees the save from the server
-        other = new_page(390, 800, has_touch=True, is_mobile=True)
-        frame2 = open_game(other, "amina")
-        frame2.locator("#btn-play").click()
-        first = frame2.locator("#level-list button").first.inner_text()
-        assert "✓" in first and "best 7 moves" in first, first
-        shot(other, "3-other-device.png")
-
-        # 3. The coach makes a challenge on level 5, Ki en Dor
-        page.goto(base + "?as=coach#/challenges/" + KEY + "/new")
-        page.locator("#c-title").fill("Key race")
-        page.select_option("#f-g-level", label="5. Ki en Dor (Key and door)")
-        page.locator("button:has-text('Make challenge')").click()
-        page.locator(".challenge-panel").first.wait_for()
-
-        # 4. Ben plays the challenge: the level is fixed, and the solve is ranked
-        page.goto(base + "?as=ben#/")
-        page.locator(".game", has_text="Bobo na Mi").locator(".challenge a:has-text('Play')").click()
-        frame = page.frame_locator("iframe.game-frame")
-        frame.locator("#btn-play:not([disabled])").wait_for()
-        assert "Ki en Dor" in frame.locator("#btn-play").inner_text()
-        assert "Key race" in frame.locator("#challenge-note").inner_text()
-        assert not frame.locator("#btn-editor").is_visible(), "no editor in challenges"
-        frame.locator("#btn-play").click()
-        frame.locator("#game-canvas").click()
-        press(page, "rrrrrrrrrr")
-        frame.locator("#win-info:has-text('1st of 1')").wait_for()
-        assert frame.locator("#win-next").is_hidden(), "no next level in a challenge"
-        shot(page, "4-challenge-won.png")
-
-        browser.close()
+            # 6. The words screen
+            frame.locator("#screen-game [data-action=menu]").tap()
+            frame.locator("#screen-levels [data-go=title]").tap()
+            frame.locator("[data-go=words]").tap()
+            assert frame.locator(".word-card").count() == 24
+            shot(phone, "8-words.png")
+            browser.close()
+    finally:
+        proc.kill()
 
     if errors:
         print("Errors:\n  " + "\n  ".join(errors))

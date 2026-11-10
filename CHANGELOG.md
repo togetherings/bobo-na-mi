@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.2.0
+
+- **EduGame Kit.** Bobo na Mi is now a Saved Game made with the kit. One zip works in Kolibri
+  (through Kolibri Studio), Moodle and other SCORM 1.2 learning systems, and RACHEL. Each learner's
+  progress is kept in their account (or the browser), with no scores. When every main level is
+  solved, Kolibri shows the activity as done.
+- **GitHub Pages:** anyone can play it at https://togetherings.github.io/bobo-na-mi/.
+- **New pictures** from the Petixel packs: Bobo, Titi and Padi in four directions with walking
+  frames, the flag, key, door, rock and wall, word tiles spelled with the Prototype letters, touch
+  buttons and the dialog frame. The packs stay out of git; `tools/build_assets.py` builds `assets/`.
+- **Translations:** every word is in `lang/`, in English and French. Word and level meanings are
+  translated; the Krio words and level names stay Krio.
+- **Options** are in the kit's panel: appearance (light or dark), language, on-screen buttons,
+  sound and rule meanings. Keys keep their own screen.
+- **Level codes:** levels in Your levels are kept in the save as short codes, and Export and Import
+  share them. Version 0.1 JSON still imports.
+- **Fixed:** tapping Back or Restart on a phone could also press the button that appeared in the
+  same place.
+- Saves happen straight away after each change, because Kolibri drops a save made as the learner
+  leaves.
+- Kolibri Games' attempts, coach challenges and time limits are gone: Saved Games have no scores.
+  Coaches can still hide the level editor on the games page.
+- Workflows from the kit's starter: Build (checks, zips, the real-Kolibri test, a browser test,
+  "Checks passed") and GitHub Pages. Zips are attached to releases instead of committed.
+
 ## 0.1.0
 
 - **Kolibri Games.** Bobo na Mi is now a Free-play Game for

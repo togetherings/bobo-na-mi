@@ -3,7 +3,8 @@
  * Pick a thing or a word from the palette, then click / drag on the grid to
  * place it. Right-click (or the ✖ tool) erases; the ⟳ tool turns a thing.
  * "Stack" lets several things share one cell. Levels can be tested, saved
- * to "Your levels", and exported / imported as JSON text.
+ * to "Your levels" (in the learner's save), and shared as level codes
+ * (Export and Import; see "Level codes" in levels.js).
  *
  * The level being edited: { name, w, h, objects: [[type, x, y, dir], ...] }
  */
@@ -22,13 +23,13 @@ BNM.editor = (function () {
   var painting = false, erasing = false, lastCell = '';
   var ready = false;
 
-  function blank(w, h) { return { name: 'Nyu level', w: w, h: h, objects: [] }; }
+  function blank(w, h) { return { name: BNM.t('editor.new_name'), w: w, h: h, objects: [] }; }
   function clone(x) { return JSON.parse(JSON.stringify(x)); }
 
   /* ---------- Setup (runs the first time the editor opens) ---------- */
   function init() {
     $('ed-new').onclick = function () {
-      BNM.ui.confirm('New level', 'Start a new empty level? Unsaved changes will be lost.', 'New',
+      BNM.ui.confirm(BNM.t('editor.new'), BNM.t('editor.new_ask'), BNM.t('editor.new'),
         function () { open(blank(12, 10), null); });
     };
     $('ed-resize').onclick = resize;
@@ -80,15 +81,16 @@ BNM.editor = (function () {
     function icon(ch) { var s = document.createElement('span'); s.className = 'tool-icon'; s.textContent = ch; return s; }
     function sep() { var s = document.createElement('span'); s.className = 'sep'; pal.appendChild(s); }
 
-    add('erase', icon('✖'), 'Eraser (or right-click)');
-    add('turn', icon('⟳'), 'Turn: rotate the top thing in a cell');
+    add('erase', icon('✖'), BNM.t('editor.erase'));
+    add('turn', icon('⟳'), BNM.t('editor.turn'));
     sep();
     Object.keys(BNM.WORDS).forEach(function (w) {          // things
-      if (BNM.isKnownType(w)) add(w, BNM.sprites.toCanvas(w, 34, placeDir), BNM.WORDS[w].label + ' (' + BNM.WORDS[w].en + ')');
+      if (BNM.isKnownType(w)) add(w, BNM.sprites.toCanvas(w, 34, placeDir), BNM.WORDS[w].label + ' (' + BNM.meaning(w) + ')');
     });
     sep();
     Object.keys(BNM.WORDS).forEach(function (w) {          // text tiles
-      add(BNM.textOf(w), BNM.sprites.toCanvas(BNM.textOf(w), 34, 0), 'Text ' + BNM.WORDS[w].label + ' = ' + BNM.WORDS[w].en);
+      add(BNM.textOf(w), BNM.sprites.toCanvas(BNM.textOf(w), 34, 0),
+        BNM.t('editor.word_tile', { word: BNM.WORDS[w].label, meaning: BNM.meaning(w) }));
     });
     markTool();
     pal.scrollLeft = scroll;
@@ -133,7 +135,7 @@ BNM.editor = (function () {
   /* ---------- Redrawing ---------- */
   function changed() {
     preview = new BNM.Game(level);
-    BNM.ruleChips($('ed-rules'), preview.rules, BNM.settings.english);
+    BNM.ruleChips($('ed-rules'), preview.rules, BNM.option('meanings') === 'on');
     redraw();
   }
 
@@ -152,7 +154,7 @@ BNM.editor = (function () {
       b.classList.toggle('sel', +b.getAttribute('data-dir') === placeDir);
     });
   }
-  function syncName() { level.name = $('ed-name').value.trim() || 'Nyu level'; }
+  function syncName() { level.name = $('ed-name').value.trim() || BNM.t('editor.new_name'); }
 
   /* ---------- Undo for edits ---------- */
   function remember() {
@@ -185,9 +187,13 @@ BNM.editor = (function () {
 
   function buildLoadList() {
     var sel = $('ed-load');
-    sel.innerHTML = '<option value="">Open level…</option>';
+    sel.innerHTML = '';
+    var first = document.createElement('option');
+    first.value = '';
+    first.textContent = BNM.t('editor.open');
+    sel.appendChild(first);
     var g1 = document.createElement('optgroup');
-    g1.label = 'Main levels (opens a copy)';
+    g1.label = BNM.t('editor.main_levels');
     BNM.BUILTIN.forEach(function (l, i) {
       var o = document.createElement('option'); o.value = 'b:' + i; o.textContent = (i + 1) + '. ' + l.name; g1.appendChild(o);
     });
@@ -195,7 +201,7 @@ BNM.editor = (function () {
     var mine = BNM.custom.list();
     if (mine.length) {
       var g2 = document.createElement('optgroup');
-      g2.label = 'Your levels';
+      g2.label = BNM.t('your_levels');
       mine.forEach(function (l) {
         var o = document.createElement('option'); o.value = 'c:' + l.id; o.textContent = l.name; g2.appendChild(o);
       });
@@ -214,88 +220,69 @@ BNM.editor = (function () {
   function save() {
     syncName();
     var id = BNM.custom.save(level, savedId);
-    if (!id) { BNM.ui.toast('Your save is full. Delete one of your levels first.'); return; }
+    if (id === null) { BNM.ui.toast(BNM.t('editor.full')); return; }
     savedId = id;
     buildLoadList();
-    BNM.ui.toast('Saved "' + level.name + '" to Your levels (save ' +
-      Math.round(BNM.storage.fullness() * 100) + '% full)');
+    BNM.ui.toast(BNM.t('editor.saved', { name: level.name, percent: Math.round(BNM.save.fullness() * 100) }));
   }
 
   function del() {
-    if (!savedId) { BNM.ui.toast('This level is not saved yet.'); return; }
-    BNM.ui.confirm('Delete level', 'Delete "' + level.name + '" from Your levels?', 'Delete', function () {
+    if (savedId === null) { BNM.ui.toast(BNM.t('editor.not_saved')); return; }
+    BNM.ui.confirm(BNM.t('editor.delete'), BNM.t('editor.delete_ask', { name: level.name }), BNM.t('editor.delete'), function () {
       BNM.custom.remove(savedId);
       savedId = null;
       buildLoadList();
-      BNM.ui.toast('Deleted');
+      BNM.ui.toast(BNM.t('editor.deleted'));
     });
   }
 
+  /* Show the level code, to copy and share (or to make a main level in levels.js). */
   function exportLevel() {
     syncName();
     var wrap = document.createElement('div');
     var p = document.createElement('p');
-    p.textContent = 'Copy this text to share the level, or paste it into levels.js (with a new id) to make it a main level.';
+    p.textContent = BNM.t('editor.export_help');
     var ta = document.createElement('textarea');
-    ta.value = BNM.levelToJSON(level);
+    ta.value = BNM.encodeLevel(level);
     ta.readOnly = true;
+    ta.id = 'ed-code';
     wrap.appendChild(p); wrap.appendChild(ta);
-    var buttons = [
-      { label: 'Copy', onClick: function () {
+    BNM.ui.modal(BNM.t('editor.export'), wrap, [
+      { label: BNM.t('editor.copy'), onClick: function () {
         ta.select();
-        try { document.execCommand('copy'); BNM.ui.toast('Copied'); } catch (e) { BNM.ui.toast('Select the text and copy it'); }
+        try { document.execCommand('copy'); BNM.ui.toast(BNM.t('editor.copied')); } catch (e) { BNM.ui.toast(BNM.t('editor.copy_by_hand')); }
         return false;                              // keep the box open
       } },
-      { label: 'Close', primary: true }
-    ];
-    // Kolibri Games' sandbox blocks downloads, so only offer Download outside it
-    if (!BNM.platform.embedded) {
-      buttons.splice(1, 0, { label: 'Download', onClick: function () { download(level.name, ta.value); return false; } });
-    }
-    BNM.ui.modal('Export level', wrap, buttons);
+      { label: BNM.t('close'), primary: true }
+    ]);
   }
 
-  /* Save the level as a .json file (not offered inside Kolibri Games). */
-  function download(name, text) {
-    try {
-      var a = document.createElement('a');
-      a.href = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
-      a.download = (name.replace(/[^\w\- ]+/g, '').trim().replace(/\s+/g, '_') || 'level') + '.json';
-      document.body.appendChild(a);
-      a.click();
-      setTimeout(function () { URL.revokeObjectURL(a.href); document.body.removeChild(a); }, 1000);
-    } catch (e) { BNM.ui.toast('Download is blocked here. Use Copy instead.'); }
-  }
-
+  /* Paste a level code (or the JSON that version 0.1 exported). */
   function importLevel() {
     var wrap = document.createElement('div');
     var p = document.createElement('p');
-    p.textContent = 'Paste level text below, or choose a .json file.';
-    var file = document.createElement('input');
-    file.type = 'file';
-    file.accept = '.json,application/json,text/plain';
+    p.textContent = BNM.t('editor.import_help');
     var ta = document.createElement('textarea');
-    ta.placeholder = '{ "name": "...", "w": 12, "h": 9, "objects": [ ... ] }';
-    file.onchange = function () {
-      if (!file.files[0]) return;
-      var reader = new FileReader();
-      reader.onload = function () { ta.value = reader.result; };
-      reader.readAsText(file.files[0]);
-    };
-    wrap.appendChild(p); wrap.appendChild(file); wrap.appendChild(ta);
-    BNM.ui.modal('Import level', wrap, [
-      { label: 'Cancel' },
-      { label: 'Load', primary: true, onClick: function () {
+    ta.id = 'ed-paste';
+    ta.placeholder = 'BNM1|12|9|...';
+    wrap.appendChild(p); wrap.appendChild(ta);
+    BNM.ui.modal(BNM.t('editor.import'), wrap, [
+      { label: BNM.t('cancel') },
+      { label: BNM.t('editor.load'), primary: true, onClick: function () {
+        var text = ta.value.trim();
         try {
-          open(BNM.validateLevel(JSON.parse(ta.value)), null);
-          BNM.ui.toast('Imported. Press Save to keep it.');
+          open(text.charAt(0) === '{' ? BNM.validateLevel(JSON.parse(text)) : BNM.decodeLevel(text), null);
+          BNM.ui.toast(BNM.t('editor.imported'));
         } catch (e) {
-          BNM.ui.toast('Could not read level: ' + e.message);
+          BNM.ui.toast(BNM.t('editor.import_failed', { error: e.message }));
           return false;
         }
       } }
     ]);
   }
 
-  return { show: show, redraw: redraw };
+  /* After a change of language: make the palette's labels again. */
+  function relabel() { if (ready) buildPalette(); }
+
+  return { show: show, redraw: redraw, relabel: relabel };
 })();
